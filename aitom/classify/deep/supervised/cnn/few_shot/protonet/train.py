@@ -11,11 +11,11 @@ import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
 import torchnet as tnt
 
-from protonets.engine import Engine
+from .protonets.engine import Engine
 
-import protonets.utils.data as data_utils
-import protonets.utils.model as model_utils
-import protonets.utils.log as log_utils
+import .protonets.utils.data as data_utils
+import .protonets.utils.model as model_utils
+import .protonets.utils.log as log_utils
 
 def main(opt):
     if not os.path.isdir(opt['log.exp_dir']):
@@ -53,16 +53,17 @@ def main(opt):
 
     engine = Engine()
 
-    meters = { 'train': { field: tnt.meter.AverageValueMeter() for field in opt['log.fields'] } }
+    meters = {'train': {field: tnt.meter.AverageValueMeter() for field in opt['log.fields']}}
 
     if val_loader is not None:
-        meters['val'] = { field: tnt.meter.AverageValueMeter() for field in opt['log.fields'] }
+        meters['val'] = {field: tnt.meter.AverageValueMeter() for field in opt['log.fields']}
 
     def on_start(state):
         if os.path.isfile(trace_file):
             os.remove(trace_file)
         state['scheduler'] = lr_scheduler.StepLR(state['optimizer'], opt['train.decay_every'], gamma=0.5)
-        print(state['optimizer'],opt['train.decay_every'])
+        print(state['optimizer'], opt['train.decay_every'])
+
     engine.hooks['on_start'] = on_start
 
     def on_start_epoch(state):
@@ -87,10 +88,10 @@ def main(opt):
         if val_loader is not None:
             with torch.no_grad():
                 model_utils.evaluate(state['model'],
-                                 val_loader,
-                                 meters['val'],
-                                 opt['model.stage'],
-                                 desc="Epoch {:d} valid".format(state['epoch']))
+                                     val_loader,
+                                     meters['val'],
+                                     opt['model.stage'],
+                                     desc="Epoch {:d} valid".format(state['epoch']))
 
         meter_vals = log_utils.extract_meter_values(meters)
         print("Epoch {:02d}: {:s}".format(state['epoch'], log_utils.render_meter_values(meter_vals)))
@@ -122,15 +123,15 @@ def main(opt):
             if opt['data.cuda']:
                 state['model'].cuda()
 
-    engine.hooks['on_end_epoch'] = partial(on_end_epoch, { })
+    engine.hooks['on_end_epoch'] = partial(on_end_epoch, {})
 
     engine.train(
-        model = model,
-        loader = train_loader,
-        optim_method = getattr(optim, opt['train.optim_method']),
-        optim_config = { 'lr': opt['train.learning_rate'],
-                         'weight_decay': opt['train.weight_decay'] },
-        max_epoch = opt['train.epochs'],
-        stage = opt['model.stage'],
-        args = opt
+        model=model,
+        loader=train_loader,
+        optim_method=getattr(optim, opt['train.optim_method']),
+        optim_config={'lr': opt['train.learning_rate'],
+                      'weight_decay': opt['train.weight_decay']},
+        max_epoch=opt['train.epochs'],
+        stage=opt['model.stage'],
+        args=opt
     )
